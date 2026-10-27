@@ -1,30 +1,39 @@
-# International Motors procurement simulation
-
-A functional, static procurement UI inspired by **Oracle E-Business Suite R12 Buyer’s Work Center**, for computer-use agent demonstrations and testing.
+# International Motors — control module purchasing
 
 Live site: https://yonahs-wonderful.github.io/international-motors-procurement/
 
-## Workflows
+A static Oracle E-Business Suite R12-style procurement simulation for a single approved item: **IM-TCM-4200, Transmission control module — LT chassis**, supplied by **Midwest Powertrain Components** at **USD 780.00 / Each**.
 
-- Search, sort, filter and export purchase orders; inspect headers, lines, schedules and distributions.
-- Create an order using supplier and item lookup dialogs, or convert approved requisitions through Document Builder.
-- Edit quantities, prices, delivery dates, accounting, dealer/customer references and notes. Attach text or files up to 1 MB each.
-- Save incomplete drafts, validate submissions, submit for approval, and inspect action history.
-- Switch to **US Purchasing Manager** in Preferences to approve or reject orders.
-- Record partial receipts against approved orders. Over-receipts are rejected.
-- Browse supplier profiles and blanket agreement references.
+The new order form preselects the supplier and single item. Enter the description, External Request ID, Dealer Order Number, End Customer, quantity, need-by date and destination. Add supplier notes or text/file justification, review schedules and the charge account, then Save and Submit for approval. The resulting status is **In Process**, not approved or delivered.
 
-## Sample agent task
+The UI validates the fixed SKU, supplier, contract price, currency, unit, whole-number quantity and required order references. Duplicate External Request IDs are rejected within the same browser's active orders. Orders can be searched by Request ID. Manager approval and partial receiving remain available as optional follow-on demo workflows.
 
-> In Requisitions, source requisition 10482 for dealer order DLR-24017, customer Pioneer Logistics. Create a standard purchase order to Midwest Powertrain Components for 20 IM-TCM-4200 modules at $780 each, needed by November 16, 2026 at San Antonio. Add a supplier note requesting delivery confirmation, attach a text justification, review the schedule and charge account, save, then submit to Chen, Jordan for approval. Report the order number, amount, and status.
+## Agent scenario
 
-Expected amount: **$15,600.00**. The first new order after reset is **800012350** and submission sets **In Process**. Approval and receiving are separate actions. Existing draft **800012349** provides an alternate task starting from an existing order.
+Create an order for dealer DLR-24017 and customer Pioneer Logistics: 20 modules needed November 16, 2026 at San Antonio. Use a unique request ID, attach a supplied material-shortage justification, save and submit to Chen, Jordan. Expected amount: **$15,600.00**. The first new PO after reset is **800012350**.
 
-No login is needed. Use **Preferences → Reset Sample Data**, or open the site with `?reset=1`, to restore the same scenario. Direct hash routes such as `#requisitions` and `#order/800012349/edit` work on GitHub Pages.
+Agent source is maintained separately in the International Motors Wonderful workspace. The agent receives these fields by webhook:
 
-## Local development
+```json
+{
+  "request_id": "IM-DEMO-20261026-001",
+  "part_number": "IM-TCM-4200",
+  "quantity": 20,
+  "need_by": "2026-11-16",
+  "dealer_order": "DLR-24017",
+  "customer": "Pioneer Logistics",
+  "ship_to": "SAN-ANTONIO",
+  "note_to_supplier": "Please confirm delivery timing.",
+  "justification": "Material shortage for a 20-truck LT Series fleet build.",
+  "action": "submit"
+}
+```
 
-Requires Node.js 18+ for checks and Python 3 for the development server; no dependencies or build step.
+Use Preferences → Reset Sample Data or `?reset=1` to restart the demo. Hash routes such as `#order/new` work on GitHub Pages. The single-item version uses a separate browser storage namespace; earlier multi-item demo records are not modified.
+
+## Development
+
+Node.js 18+ and Python 3; no dependencies or build step.
 
 ```sh
 npm start
@@ -32,10 +41,10 @@ npm run check
 npm test
 ```
 
-Open http://127.0.0.1:4178/. The repository root is published directly through GitHub Pages from the `main` branch.
+Open http://127.0.0.1:4178/. GitHub Pages publishes the repository root from main.
 
-## Scope and storage
+## Scope and persistence
 
-This is an independently built simulation, not an authenticated International Motors or Oracle system. Supplier names, contacts, part numbers, transactions, roles and approval rules are illustrative. Public evidence supports Oracle Applications as a relevant procurement-system candidate; International’s exact internal screens, customization and current version have not been verified. See [DESIGN.md](DESIGN.md) for sources.
+This independently built demonstration does not connect to International Motors, Oracle, a supplier or a payment system. Names, SKUs and transactions are illustrative. Public evidence supports Oracle Applications as a relevant candidate; the actual internal screens and version are unverified. See [DESIGN.md](DESIGN.md).
 
-All mutations affect browser-local demonstration records only. No order, email or payment is sent. Saved records and attachments use localStorage, scoped to the browser profile and site origin; unsaved edits use sessionStorage. There is no shared database, actual authentication, server-side approval enforcement or cross-device synchronization. Browser storage quotas apply. Use synthetic documents and data.
+Saved records and attachments use localStorage, scoped to one browser profile and origin; unsaved edits use sessionStorage. There is no shared database or cross-device synchronization. A fresh agent browser may not see prior runs or a user's browser data. The caller must deduplicate and serialize deliveries across independent webhook runs. No global exactly-once ordering is claimed. Use synthetic documents. Files are limited to 1 MB each and browser storage quotas apply.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { clone, total, validDate, validateOrder, validateReceipt, csv } from './domain.js';
+import { clone, total, validDate, validateOrder, validateReceipt, csv, duplicateRequest } from './domain.js';
 import { seedState, suppliers, locations } from './data.js';
 
 const sample = () => clone(seedState().orders[0]);
@@ -59,4 +59,38 @@ test('receiving allows partial and exact remaining quantities and rejects over-r
 
 test('CSV escapes quotes, commas and line breaks', () => {
   assert.equal(csv([['Order', 'Description'], ['12', 'Part, "A"\nurgent']]), '"Order","Description"\r\n"12","Part, ""A""\nurgent"');
+});
+
+test('only the contracted module, price, unit, currency and single line can be submitted', () => {
+  for (const mutate of [
+    o => { o.lines[0].item = 'IM-FLT-1100'; },
+    o => { o.lines[0].price = 1; },
+    o => { o.lines[0].uom = 'Box'; },
+    o => { o.currency = 'CAD'; },
+    o => { o.lines.push(clone(o.lines[0])); },
+    o => { o.lines[0].quantity = 1.5; },
+    o => { o.requestId = ' '; },
+    o => { o.dealerOrder = ''; },
+    o => { o.customer = ''; },
+  ]) {
+    const order = sample();
+    mutate(order);
+    assert.ok(validateOrder(order, suppliers, locations).length);
+  }
+});
+
+test('duplicate request IDs detect active orders, allow own edits and ignore cancelled orders', () => {
+  const order = sample();
+  assert.equal(duplicateRequest([order], { id: null, requestId: order.requestId }).id, order.id);
+  assert.equal(duplicateRequest([order], order), undefined);
+  assert.equal(duplicateRequest([{ ...order, status: 'Cancelled' }], { id: null, requestId: order.requestId }), undefined);
+  assert.equal(duplicateRequest([order], { requestId: '' }), undefined);
+});
+
+test('all seeded orders, requisitions, and supplier records use the single approved item', () => {
+  const state = seedState();
+  assert.equal(suppliers.length, 1);
+  assert.ok(state.orders.every(o => o.lines.length === 1 && o.lines[0].item === 'IM-TCM-4200'));
+  assert.ok(state.requisitions.every(r => r.item === 'IM-TCM-4200'));
+  for (const order of state.orders) assert.deepEqual(validateOrder(order, suppliers, locations), []);
 });

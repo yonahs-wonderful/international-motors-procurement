@@ -21,8 +21,10 @@ Evidence supports Oracle as a plausible procurement-system family; it does not p
 ## Simulation choices
 
 - Original International Motors text heading; no external brand assets or font downloads.
-- Fictional supplier/catalog records and October 2026 sample transactions.
+- One fixed fictional item (IM-TCM-4200), one approved supplier and USD 780.00 unit price. Quantity, delivery date, dealer/customer references and justification come from the request.
 - Dealer order and end-customer references are illustrative customization.
 - Approval responsibility switching makes the end-to-end exercise self-contained, without presenting it as production access control.
 - Agreement screens provide sourcing context; orders created there are standard purchase orders, not a complete blanket-release engine.
 - Taxes, budget controls, EDI, invoice matching, real email transmission and multi-user concurrency are outside this demo.
+
+External Request ID is a visible business field for webhook traceability. Uniqueness is enforced against non-cancelled orders in the current browser only. No request payload is embedded in a URL or used to bypass form entry.
